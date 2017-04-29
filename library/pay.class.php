@@ -17,27 +17,7 @@ class Pay {
 	protected $appid;
 	protected $mch_id;
 	protected $params = [];
-	protected $createParams = [
-		'device_info', 
-		'nonce_str', 
-		'sign', 
-		'sign_type', 
-		'body', 
-		'detail', 
-		'attach', 
-		'out_trade_no', 
-		'fee_type', 
-		'total_fee', 
-		'spbill_create_ip', 
-		'time_start', 
-		'time_expire', 
-		'goods_tag', 
-		'notify_url', 
-		'trade_type', 
-		'product_id', 
-		'limit_pay', 
-		'openid'
-	];
+	protected $createParams = ['device_info', 'nonce_str', 'sign', 'sign_type', 'body', 'detail', 'attach', 'out_trade_no', 'fee_type', 'total_fee', 'spbill_create_ip', 'time_start', 'time_expire', 'goods_tag', 'notify_url', 'trade_type', 'product_id', 'limit_pay', 'openid'];
 	protected $queryParams = [];
 	protected $closeParams = [];
 	protected $refundParams = [];
@@ -84,20 +64,26 @@ class Pay {
 	 * public ?array function create()
 	 */
 	public function create(string $api = null): array {
-		$ends=$this->send(self::operation_create, $api);
-		if(!is_null($ends)) return [
-				
-		];
+		$ends = $this->send(self::operation_create, $api);
+		if(!is_null($ends)){
+			$keys = ['trade_type', 'prepay_id', 'code_url'];
+			return $this->lose($ends, $keys);
+		}
+		return null;
+	}
+	
+	/**
+	 * public ?array function query(void)
+	 */
+	public function query(string $api=null): array {
+		
 	}
 	
 	/**
 	 * protected array function prepare(void)
 	 */
 	protected function prepare($operation): array {
-		$params = [
-			'appid'=>$this->appId, 
-			'mch_id'=>$this->mchId
-		];
+		$params = ['appid'=>$this->appId, 'mch_id'=>$this->mchId];
 		$params = $this->map($operation);
 		if(!$params) return [];
 		foreach($params as $name){
@@ -160,6 +146,15 @@ class Pay {
 			return null;
 		}else
 			return $ends;
+	}
+	
+	/**
+	 */
+	protected function lose(array $datas, array $keys): array {
+		foreach($keys as $key){
+			if(is_string($key) && isset($datas[$key]))) $ends[$key]=$datas[$key];
+		}
+		return $ends?? [];
 	}
 	
 	//
