@@ -5,7 +5,7 @@ namespace SporeAura\Nooper;
 class Pay {
 	/**
 	 */
-	const operation_create = 1;
+	const operate_create = 1;
 	const operate_query = 2;
 	const operate_close = 3;
 	const operate_refund = 4;
@@ -15,20 +15,28 @@ class Pay {
 	/**
 	 */
 	protected $appid;
-	protected $mch_id;
-	protected $params = [];
-	protected $createParams = ['device_info', 'nonce_str', 'sign', 'sign_type', 'body', 'detail', 'attach', 'out_trade_no', 'fee_type', 'total_fee', 'spbill_create_ip', 'time_start', 'time_expire', 'goods_tag', 'notify_url', 'trade_type', 'product_id', 'limit_pay', 'openid'];
-	protected $queryParams = [];
-	protected $closeParams = [];
-	protected $refundParams = [];
-	protected $queryRefundParams = [];
-	protected $downloadBillParams = [];
+	protected $mchid;
+	protected $urlDomain = 'https://api.mch.weixin.qq.com';
+	protected $urlDetails = [operate_create=>'pay/unifiedorder', operate_query=>'pay/orderquery', operate_close=>'pay/closeorder ', operate_refund=>'secapi/pay/refund', operate_refund_query=>'pay/refundquery', operate_download_bill=>'pay/downloadbill'];
+	protected $urls = [];
+	protected $params = ['sign_type'=>'MD5'];
+	protected $createParamKeys = ['device_info', 'nonce_str', 'sign', 'sign_type', 'body', 'detail', 'attach', 'out_trade_no', 'fee_type', 'total_fee', 'spbill_create_ip', 'time_start', 'time_expire', 'goods_tag', 'notify_url', 'trade_type', 'product_id', 'limit_pay', 'openid'];
+	protected $queryParamKeys = ['transaction_id', 'out_trade_no', 'nonce_str', 'sign', 'sign_type'];
+	protected $closeParamKeys = [];
+	protected $refundParamKeys = [];
+	protected $queryRefundParamKeys = [];
+	protected $downloadBillParamKeys = [];
 	
 	/**
-	 * public void function __construct(void)
+	 * public void function __construct(?string appid = null, ?string $mchid = null)
 	 */
-	public function __construct() {
-		//
+	public function __construct(string $appid = null, string $mchid = null) {
+		if(!is_null($appid)) $this->appid = $appid;
+		if(!is_null($mchid)) $this->mchid = $mchid;
+		
+		foreach($this->urlDetails as $key => $detail){
+			$this->urls[$key] = implode('/', [$this->urlDomain, $detail]);
+		}
 	}
 	
 	/**
@@ -39,9 +47,37 @@ class Pay {
 	}
 	
 	/**
-	 * public boolean function setParam(string $name, mixed $value)
+	 * public string function appid(string $appid)
 	 */
-	public function setParam(string $name, $value): bool {
+	public function appid(string $appid): string {
+		$this->appid = $appid;
+		return $appid;
+	}
+	
+	/**
+	 * public string function mchid(string $mchid)
+	 */
+	public function mchid(string $mchid): string {
+		$this->mchid = $mchid;
+		return $mchid;
+	}
+	
+	/**
+	 * public boolean function url(int $operate, string $url)
+	 */
+	public function url(int $operate, string $url): bool {
+		$keys = array_keys($this->urls);
+		if(in_array($operate, $keys, true)){
+			$this->urls[$operate] = $url;
+			return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * public boolean function param(string $name, mixed $value)
+	 */
+	public function param(string $name, $value): bool {
 		if(in_array($name, $this->params, true)){
 			$this->datas[$name] = $value;
 			return true;
@@ -50,40 +86,66 @@ class Pay {
 	}
 	
 	/**
-	 * public integer function setParams(array $params)
+	 * public integer function params(array $params)
 	 */
-	public function setParams(array $params): int {
+	public function params(array $params): int {
 		$counter = 0;
 		foreach($params as $key => $param){
-			if(is_string($key) && $this->setParam($key, $param)) $counter++;
+			if(is_string($key) && $this->param($key, $param)) $counter++;
 		}
 		return $counter;
 	}
 	
 	/**
-	 * public ?array function create()
+	 * public ?array function create(boolean $clip = true, ?string $rul = null)
 	 */
-	public function create(string $api = null): array {
-		$ends = $this->send(self::operation_create, $api);
+	public function create(bool $clip = true, string $url = null): array {
+		$ends = $this->send(self::operate_create, $url);
 		if(!is_null($ends)){
-			$keys = ['trade_type', 'prepay_id', 'code_url'];
-			return $this->lose($ends, $keys);
+			if($clip){
+				$keys = ['trade_type', 'prepay_id', 'code_url'];
+				return $this->lose($ends, $keys);
+			}
+			return $ends;
 		}
 		return null;
 	}
 	
 	/**
-	 * public ?array function query(void)
+	 * public ?array function query(boolean $clip = true, ?string $url = null)
 	 */
-	public function query(string $api=null): array {
-		
+	public function query(bool $clip = true, string $url = null): array {
+		$ends = $this->send(self::operate_query, $url);
+		if(!is_null($ends)){
+			if($clip){
+				$keys = [];
+				return $this->clip($ends, $keys);
+			}
+			return $ends;
+		}
+		return null;
+	}
+	
+	/**
+	 * pulblic ?array function close(boolean $clip = true, ?string $url = null)
+	 */
+	public function close(bool $clip = true, string $url = null): array {
+		$ends = $this->send(self::operate_close, $url);
+		if(!is_null($ends)){
+			if($clip){
+				$keys = [];
+				return $this->clip($ends, $keys);
+			}
+			return $ends;
+		}
+		return null;
 	}
 	
 	/**
 	 * protected array function prepare(void)
 	 */
 	protected function prepare($operation): array {
-		$params = ['appid'=>$this->appId, 'mch_id'=>$this->mchId];
+		$params = ['appid'=>$this->appid, 'mch_id'=>$this->mchid];
 		$params = $this->map($operation);
 		if(!$params) return [];
 		foreach($params as $name){
@@ -150,13 +212,21 @@ class Pay {
 	
 	/**
 	 */
-	protected function lose(array $datas, array $keys): array {
+	protected function clip(array $datas, array $keys): array {
 		foreach($keys as $key){
-			if(is_string($key) && isset($datas[$key]))) $ends[$key]=$datas[$key];
+			if(is_string($key) && isset($datas[$key])){
+				$ends[$key] = $datas[$key];
+			}
+			return $ends ?? [];
 		}
-		return $ends?? [];
 	}
 	
+	/**
+	 * protected string function rand(integer $len = 30)
+	 */
+	protected function rand(int $len= 30): string {
+		
+	} 
 	//
 }
 
