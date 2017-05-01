@@ -16,27 +16,37 @@ class Pay {
 	 */
 	protected $appid;
 	protected $mchid;
+	protected $key;
 	protected $urlDomain = 'https://api.mch.weixin.qq.com';
 	protected $urlDetails = [operate_create=>'pay/unifiedorder', operate_query=>'pay/orderquery', operate_close=>'pay/closeorder ', operate_refund=>'secapi/pay/refund', operate_refund_query=>'pay/refundquery', operate_download_bill=>'pay/downloadbill'];
 	protected $urls = [];
+	protected $datas=[];
 	protected $params = ['sign_type'=>'MD5'];
-	protected $createParamKeys = ['device_info', 'nonce_str', 'sign', 'sign_type', 'body', 'detail', 'attach', 'out_trade_no', 'fee_type', 'total_fee', 'spbill_create_ip', 'time_start', 'time_expire', 'goods_tag', 'notify_url', 'trade_type', 'product_id', 'limit_pay', 'openid'];
-	protected $queryParamKeys = ['transaction_id', 'out_trade_no', 'nonce_str', 'sign', 'sign_type'];
-	protected $closeParamKeys = [];
-	protected $refundParamKeys = [];
-	protected $queryRefundParamKeys = [];
-	protected $downloadBillParamKeys = [];
+	protected $createParams = ['device_info', 'nonce_str', 'sign', 'sign_type', 'body', 'detail', 'attach', 'out_trade_no', 'fee_type', 'total_fee', 'spbill_create_ip', 'time_start', 'time_expire', 'goods_tag', 'notify_url', 'trade_type', 'product_id', 'limit_pay', 'openid'];
+	protected $queryParams = ['transaction_id', 'out_trade_no', 'nonce_str', 'sign', 'sign_type'];
+	protected $closeParams = [];
+	protected $refundParams = [];
+	protected $queryRefundParams = [];
+	protected $downloadBillParams = [];
 	
 	/**
-	 * public void function __construct(?string appid = null, ?string $mchid = null)
+	 * public void function __construct(string appid, string $mchid, string $key)
 	 */
-	public function __construct(string $appid = null, string $mchid = null) {
-		if(!is_null($appid)) $this->appid = $appid;
-		if(!is_null($mchid)) $this->mchid = $mchid;
+	public function __construct(string $appid, string $mchid, string $key) {
+		$this->appid = $appid;
+		$this->mchid = $mchid;
+		$this->key = $key;
+		
+		$keys=array_merge($this->createParams, $this->queryParams, $this->closeParmas, $this->refundParams, $this->queryRefundParams, $this->downloadBillParams);
+		$keys=array_merge(array_unique($keys));
+		foreach($keys as $key){
+			$this->params[$key]=null;
+		}
 		
 		foreach($this->urlDetails as $key => $detail){
 			$this->urls[$key] = implode('/', [$this->urlDomain, $detail]);
 		}
+		
 	}
 	
 	/**
@@ -63,6 +73,14 @@ class Pay {
 	}
 	
 	/**
+	 * public string function key(string $data)
+	 */
+	public function key(string $data):string{
+		$this->key=$data;
+		return $data;
+	}
+	
+	/**
 	 * public boolean function url(int $operate, string $url)
 	 */
 	public function url(int $operate, string $url): bool {
@@ -75,9 +93,9 @@ class Pay {
 	}
 	
 	/**
-	 * public boolean function param(string $name, mixed $value)
+	 * public boolean function param(string $name, string $value)
 	 */
-	public function param(string $name, $value): bool {
+	public function param(string $name, string $value): bool {
 		if(in_array($name, $this->params, true)){
 			$this->datas[$name] = $value;
 			return true;
@@ -142,25 +160,46 @@ class Pay {
 	}
 	
 	/**
-	 * protected array function prepare(void)
 	 */
-	protected function prepare($operation): array {
-		$params = ['appid'=>$this->appid, 'mch_id'=>$this->mchid];
-		$params = $this->map($operation);
+	public function sign(array $datas): string {
+		foreach($datas as $key => $data){
+			if(!is_string($key)) unset($datas[$key]);
+			elseif(!is_scalar($data)) unset($datas[$key]);
+			elseif('' === $data) unset($datas[$key]);
+			elseif('sign' == $key) unset($datas[$key]);
+		}
+		sort($datas, SORT_STRING);
+		foreach($datas as $key => $data){
+			$params[] = $key . '=' . $data;
+		}
+		$params[] = ('key=' . $this->key);
+		$str = implode('&', $params);
+		return strtoupper(md5($str));
+	}
+	
+	/**
+	 * protected array function prepare(integer $operate)
+	 */
+	protected function prepare(int $operate): array {
+		$params = $this->map($operate);
 		if(!$params) return [];
 		foreach($params as $name){
 			if(isset($this->params[$name])) $params[$name] = $this->params[$name];
 		}
+		$params['appid'] = $this->appid;
+		$params['mchid'] = $this->mchid;
+		$params['nonce_str'] = $this->rand();
+		$params['sign'] = $this->sign($params, $this->signType);
 		return $params;
 	}
 	
 	/**
-	 * protected array function map(int $operation)
+	 * protected array function map(int $operate)
 	 */
-	protected function map(int $operation): array {
-		switch($operation){
-			case self::operation_create:
-				return $this->createParams;
+	protected function map(int $operate): array {
+		switch($operate){
+			case self::operate_create:
+				return $this->createParamss;
 				break;
 			case self::operate_query:
 				return $this->queryParams;
@@ -224,9 +263,15 @@ class Pay {
 	/**
 	 * protected string function rand(integer $len = 30)
 	 */
-	protected function rand(int $len= 30): string {
-		
-	} 
+	protected function rand(int $len = 30): string {
+		$str = '';
+		$chars = array_merge(range('0', '9'), range('a', 'z'));
+		$end = count($chars) - 1;
+		for($i = 0;$i < $len;$i++){
+			$str .= $chars[mt_rand(0, $end)];
+		}
+		return strtoupper($str);
+	}
 	//
 }
 

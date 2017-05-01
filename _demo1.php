@@ -1,13 +1,19 @@
 <?php
-function uniqidReal($lenght = 13) {
-    // uniqid gives 13 chars, but you could adjust it to your needs.
-    if (function_exists("random_bytes")) {
-        $bytes = random_bytes(ceil($lenght / 2));
-    } elseif (function_exists("openssl_random_pseudo_bytes")) {
-        $bytes = openssl_random_pseudo_bytes(ceil($lenght / 2));
-    } else {
-        throw new Exception("no cryptographically secure random function available");
-    }
-    return substr(bin2hex($bytes), 0, $lenght);
+function uniqidReal($len = 13) {
+		$str='';
+		$chars = array_merge(range('0', '9'), range('a', 'z'));
+		$end = count($chars) - 1;
+		for($i = 0;$i < $len;$i++){
+			$str .= $chars[mt_rand(0, $end)];
+		}
+		return strtoupper($str);
 }
+
+$arr=['sign'=>'aaa', 'name'=>null, 'sex'=>'', 'fav'=>'box'];
+foreach($arr as $key=>$value){
+	if(!is_string($key)) unset($datas)
+	if($key=='sign') unset($arr[$key]);
+	elseif(is_null($value)) unset($arr[$key]);
+}
+print_r($arr);
 ?>
