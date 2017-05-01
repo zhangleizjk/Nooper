@@ -30,6 +30,7 @@ class Pay {
 	protected $refundParams = [];
 	protected $queryRefundParams = [];
 	protected $downloadBillParams = [];
+	protected $createQrcodeParams=['time_stamp','product_id'];
 	
 	/**
 	 * public void function __construct(string appid, string $mchid, string $key)
