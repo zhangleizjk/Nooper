@@ -9,9 +9,13 @@ function uniqidReal(int $len = 13) {
 		return strtoupper($str);
 }
 
-try{
-uniqidReal('abc');
-}catch(Throwable $e){
-	echo "err";
-}
+	$dt = new DateTime();
+	$dt->setTimezone(new DateTimeZone('Asia/Shanghai'));
+		$datas['stamp'] = $dt->getTimestamp();
+		$datas['format']=$dt->format('YmdHis');
+		print_r($datas);
+		$dt->add(new DateInterval('PT3600S'));
+		$datas['stamp'] = $dt->getTimestamp();
+		$datas['format']=$dt->format('YmdHis');
+		print_r($datas);
 ?>
