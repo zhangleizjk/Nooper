@@ -3,6 +3,9 @@
 namespace SporeAura\Nooper;
 
 use Throwable;
+use DateTime;
+use DateTimeZone;
+use DateInterval;
 
 class Pay {
 	/**
@@ -11,26 +14,28 @@ class Pay {
 	const operate_query = 2;
 	const operate_close = 3;
 	const operate_refund = 4;
-	const operate_query_refund = 5;
-	const operate_download_bill = 6;
+	const operate_refund_query = 5;
+	const operate_download = 6;
+	const operate_qrcode_create = 7;
+	const operate_qrcode_change = 8;
 	
 	/**
 	 */
 	protected $appid;
 	protected $mchid;
 	protected $key;
-	protected $urlDomain = 'https://api.mch.weixin.qq.com';
-	protected $urlDetails = [operate_create=>'pay/unifiedorder', operate_query=>'pay/orderquery', operate_close=>'pay/closeorder ', operate_refund=>'secapi/pay/refund', operate_refund_query=>'pay/refundquery', operate_download_bill=>'pay/downloadbill'];
-	protected $urls = [];
+	protected $hash = 'MD5';
 	protected $datas = [];
-	protected $params = ['sign_type'=>'MD5'];
-	protected $createParams = ['device_info', 'nonce_str', 'sign', 'sign_type', 'body', 'detail', 'attach', 'out_trade_no', 'fee_type', 'total_fee', 'spbill_create_ip', 'time_start', 'time_expire', 'goods_tag', 'notify_url', 'trade_type', 'product_id', 'limit_pay', 'openid'];
+	protected $urls = [operate_create=>'https://api.mch.weixin.qq.com/pay/unifiedorder', operate_query=>'https://api.mch.weixin.qq.com/pay/orderquery', operate_close=>'https://api.mch.weixin.qq.com/pay/closeorder ', operate_refund=>'https://api.mch.weixin.qq.com/secapi/pay/refund', operate_refund_query=>'https://api.mch.weixin.qq.com/pay/refundquery', operate_download=>'https://api.mch.weixin.qq.com/pay/downloadbill', operate_qrcode_create=>'weixin://wxpay/bizpayurl', operate_qrcode_change=>'https://api.mch.weixin.qq.com/tools/shorturl'];
+	protected $params = [];
+	protected $createParams = ['device_info', 'nonce_str', 'body', 'detail', 'attach', 'out_trade_no', 'fee_type', 'total_fee', 'spbill_create_ip', 'time_start', 'time_expire', 'goods_tag', 'notify_url', 'trade_type', 'product_id', 'limit_pay', 'openid'];
 	protected $queryParams = ['transaction_id', 'out_trade_no', 'nonce_str', 'sign', 'sign_type'];
 	protected $closeParams = [];
 	protected $refundParams = [];
-	protected $queryRefundParams = [];
-	protected $downloadBillParams = [];
-	protected $createQrcodeParams=['time_stamp','product_id'];
+	protected $refundQueryParams = [];
+	protected $downloadParams = [];
+	protected $qrcodeCreateParams = ['product_id', 'time_stamp'];
+	protected $qrcodeChangeParams = ['long_url'];
 	
 	/**
 	 * public void function __construct(string appid, string $mchid, string $key)
@@ -42,10 +47,6 @@ class Pay {
 		
 		$keys = array_merge($this->createParams, $this->queryParams, $this->closeParmas, $this->refundParams, $this->queryRefundParams, $this->downloadBillParams);
 		$this->params = array_merge(array_unique($keys));
-		
-		foreach($this->urlDetails as $key => $detail){
-			$this->urls[$key] = implode('/', [$this->urlDomain, $detail]);
-		}
 		//
 	}
 	
@@ -198,6 +199,35 @@ class Pay {
 	}
 	
 	/**
+	 * public array function qrcode(string $prodouctId, ?string $timestamp = null)
+	 */
+	public function qrcode(string $productId): array {
+		$this->data('product_id', $productId);
+		$this->data('time_stamp', $this->now()['stamp']);
+		$datas = $this->prepare(self::operate_qrcode_create);
+		foreach($datas as $key => &$data){
+			$data = ($key . '=' . $data);
+		}
+		$long = $this->urls[self::operate_qrcode_create] . '?' . implode('&', $datas);
+		$short = $this->qrcodec($long);
+		$image = null; /* ? */
+		return ['long_url'=>$long, 'short_url'=>$short, 'image'=>$image];
+	}
+	
+	/**
+	 * public ?array function qrcodec(string $url, boolean $clip = true)
+	 */
+	public function qrcodec(string $url, bool $clip = true): array {
+		$this->data('long_url', $url);
+		$ends = $this->send(self::operate_qrcode_change);
+		if(!is_null($ends)){
+			$keys = ['short_url'];
+			return $clip ? $this->clip($ends, $keys) : $ends;
+		}
+		return null;
+	}
+	
+	/**
 	 * public array function prepare(integer $operate)
 	 */
 	public function prepare(int $operate): array {
@@ -207,9 +237,9 @@ class Pay {
 			if(isset($this->datas[$param])) $datas[$param] = $this->datas[$param];
 		}
 		$datas['appid'] = $this->appid;
-		$datas['mchid'] = $this->mchid;
+		$datas['mch_id'] = $this->mchid;
 		$datas['nonce_str'] = $this->rand();
-		$datas['sign'] = $this->sign($params, $this->signType);
+		$datas['sign'] = $this->sign($datas);
 		return $datas;
 	}
 	
@@ -250,7 +280,7 @@ class Pay {
 			elseif('' === $data) unset($datas[$key]);
 			elseif('sign' == $key) unset($datas[$key]);
 		}
-		sort($datas, SORT_STRING);
+		ksort($datas);
 		foreach($datas as $key => $data){
 			$params[] = $key . '=' . $data;
 		}
@@ -282,6 +312,12 @@ class Pay {
 			case self::operate_download_bill:
 				return $this->downloadBillParams;
 				break;
+			case self::operate_qrcode_create:
+				return $this->qrcodeCreateParams;
+				break;
+			case self::operate_qrcode_change:
+				return $this->qrcodeChangeParams;
+				break;
 			default:
 				return null;
 				break;
@@ -289,7 +325,7 @@ class Pay {
 	}
 	
 	/**
-	 *  protected array function clip(array $datas, array $keys)
+	 * protected array function clip(array $datas, array $keys)
 	 */
 	protected function clip(array $datas, array $keys): array {
 		foreach($keys as $key){
@@ -311,6 +347,18 @@ class Pay {
 			$str .= $chars[mt_rand(0, $end)];
 		}
 		return strtoupper($str);
+	}
+	
+	/**
+	 * public array function now(integer $seconds = 0)
+	 */
+	public function now(int $seconds = 0): array {
+		$dt = new DateTime();
+		$dt->setTimezone(new DateTimeZone('Asia/Shanghai'));
+		$dt->add(new DateInterval('PT' . $seconds . 'S'));
+		$datas['stamp'] = $dt->getTimestamp();
+		$datas['format'] = $dt->format('YmdHis');
+		return $datas;
 	}
 	//
 }
