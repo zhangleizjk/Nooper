@@ -1,6 +1,6 @@
 <?php
 // declare(strict_types = 1);
-namespace SporeAura\Nooper;
+namespace Nooper;
 
 use Throwable;
 use DateTime;
@@ -21,6 +21,7 @@ class Pay {
 	const operate_callback_req = 9;
 	const operate_callback_rsp = 10;
 	const operate_notify = 11;
+	const operate_reply = 12;
 	
 	/**
 	 */
@@ -29,76 +30,18 @@ class Pay {
 	protected $key;
 	protected $hash = 'MD5';
 	protected $datas = [];
-	protected $urls = [
-		self::operate_create=>'https://api.mch.weixin.qq.com/pay/unifiedorder', 
-		self::operate_query=>'https://api.mch.weixin.qq.com/pay/orderquery', 
-		self::operate_close=>'https://api.mch.weixin.qq.com/pay/closeorder ', 
-		self::operate_refund=>'https://api.mch.weixin.qq.com/secapi/pay/refund', 
-		self::operate_refund_query=>'https://api.mch.weixin.qq.com/pay/refundquery', 
-		self::operate_download=>'https://api.mch.weixin.qq.com/pay/downloadbill', 
-		self::operate_qrcode_create=>'weixin://wxpay/bizpayurl', 
-		self::operate_qrcode_change=>'https://api.mch.weixin.qq.com/tools/shorturl', 
-		self::opeate_callback_req=>null, 
-		self::operate_callback_rsp=>null, 
-		self::operate_notify=>null];
+	protected $urls = [self::operate_create=>'https://api.mch.weixin.qq.com/pay/unifiedorder', self::operate_query=>'https://api.mch.weixin.qq.com/pay/orderquery', self::operate_close=>'https://api.mch.weixin.qq.com/pay/closeorder ', self::operate_refund=>'https://api.mch.weixin.qq.com/secapi/pay/refund', self::operate_refund_query=>'https://api.mch.weixin.qq.com/pay/refundquery', self::operate_download=>'https://api.mch.weixin.qq.com/pay/downloadbill', self::operate_qrcode_create=>'weixin://wxpay/bizpayurl', self::operate_qrcode_change=>'https://api.mch.weixin.qq.com/tools/shorturl', self::opeate_callback_req=>null, self::operate_callback_rsp=>null, self::operate_notify=>null];
 	protected $params = [];
-	protected $createParams = [
-		'device_info', 
-		'openid', 
-		'out_trade_no', 
-		'product_id', 
-		'trade_type', 
-		'body', 
-		'detail', 
-		'attach', 
-		'total_fee', 
-		'fee_type', 
-		'spbill_create_ip', 
-		'time_start', 
-		'time_expire', 
-		'goods_tag', 
-		'limit_pay'];
-	protected $queryParams = [
-		'transaction_id', 
-		'out_trade_no'];
-	protected $closeParams = [
-		'out_trade_no'];
-	protected $refundParams = [
-		'device_info', 
-		'transaction_id', 
-		'out_trade_no', 
-		'out_refund_no', 
-		'total_fee', 
-		'refund_fee', 
-		'refund_fee_type', 
-		'refund_account', 
-		'op_user_id'];
-	protected $refundQueryParams = [
-		'device_info', 
-		'transaction_id', 
-		'refund_id', 
-		'out_trade_no', 
-		'out_refund_no'];
-	protected $downloadParams = [
-		'device_info', 
-		'bill_date', 
-		'bill_type', 
-		'tar_type'];
-	protected $qrcodeCreateParams = [
-		'product_id', 
-		'time_stamp'];
-	protected $qrcodeChangeParams = [
-		'long_url'];
-	protected $callbackReqParams = [
-		'openid', 
-		'is_subscribe', 
-		'product_id'];
-	protected $callbackRspParams = [
-		'return_code', 
-		'return_msg', 
-		'prepay_id', 
-		'result_code', 
-		'err_code_ddes'];
+	protected $createParams = ['device_info', 'openid', 'out_trade_no', 'product_id', 'trade_type', 'body', 'detail', 'attach', 'total_fee', 'fee_type', 'spbill_create_ip', 'time_start', 'time_expire', 'goods_tag', 'limit_pay'];
+	protected $queryParams = ['transaction_id', 'out_trade_no'];
+	protected $closeParams = ['out_trade_no'];
+	protected $refundParams = ['device_info', 'transaction_id', 'out_trade_no', 'out_refund_no', 'total_fee', 'refund_fee', 'refund_fee_type', 'refund_account', 'op_user_id'];
+	protected $refundQueryParams = ['device_info', 'transaction_id', 'refund_id', 'out_trade_no', 'out_refund_no'];
+	protected $downloadParams = ['device_info', 'bill_date', 'bill_type', 'tar_type'];
+	protected $qrcodeCreateParams = ['product_id', 'time_stamp'];
+	protected $qrcodeChangeParams = ['long_url'];
+	protected $callbackReqParams = ['openid', 'is_subscribe', 'product_id'];
+	protected $callbackRspParams = ['return_code', 'return_msg', 'prepay_id', 'result_code', 'err_code_ddes'];
 	
 	/**
 	 * public void function __construct(string appid, string $mchid, string $key, string $notify)
@@ -197,13 +140,7 @@ class Pay {
 	public function create(bool $clip = true): array {
 		$ends = $this->send(self::operate_create);
 		if(!is_null($ends)){
-			$keys = [
-				'return_code', 
-				'result_code', 
-				'device_info', 
-				'trade_type', 
-				'prepay_id', 
-				'code_url'];
+			$keys = ['return_code', 'result_code', 'device_info', 'trade_type', 'prepay_id', 'code_url'];
 			return $clip ? $this->clip($ends, $keys) : $ends;
 		}
 		return null;
@@ -215,23 +152,7 @@ class Pay {
 	public function query(bool $clip = true): array {
 		$ends = $this->send(self::operate_query);
 		if(!is_null($ends)){
-			$keys = [
-				'return_code', 
-				'result_code', 
-				'device_info', 
-				'transaction_id', 
-				'out_trade_no', 
-				'trade_type', 
-				'trade_state', 
-				'open_id', 
-				'bank_type', 
-				'total_fee', 
-				'settlement_total_fee', 
-				'cash_fee', 
-				'coupon_fee', 
-				'coupon_count', 
-				'time_end', 
-				'attach'];
+			$keys = ['return_code', 'result_code', 'device_info', 'transaction_id', 'out_trade_no', 'trade_type', 'trade_state', 'open_id', 'bank_type', 'total_fee', 'settlement_total_fee', 'cash_fee', 'coupon_fee', 'coupon_count', 'time_end', 'attach'];
 			return $clip ? $this->clip($ends, $keys) : $ends;
 		}
 		return null;
@@ -243,9 +164,7 @@ class Pay {
 	public function close(bool $clip = true): array {
 		$ends = $this->send(self::operate_close);
 		if(!is_null($ends)){
-			$keys = [
-				'return_code', 
-				'result_code'];
+			$keys = ['return_code', 'result_code'];
 			return $clip ? $this->clip($ends, $keys) : $ends;
 		}
 		return null;
@@ -257,13 +176,7 @@ class Pay {
 	public function refund(bool $clip = true): array {
 		$ends = $this->send(self::operate_refund);
 		if(!is_null($ends)){
-			$keys = [
-					'return_code',
-					'result_code',
-					'device_info',
-					'transaction_id',
-					'out_trade_no',
-			];
+			$keys = ['return_code', 'result_code', 'device_info', 'transaction_id', 'out_trade_no', 'refund_id', 'out_refund_no', 'refund_fee', 'settlement_refund_fee', 'total_fee', 'settlement_total_fee', 'cash_fee', 'cash_refund_fee', 'coupon_refund_fee', 'coupon_refund_count'];
 			return $clip ? $this->clip($ends, $keys) : $ends;
 		}
 		return null;
@@ -275,7 +188,7 @@ class Pay {
 	public function queryr(bool $clip = true): array {
 		$ends = $this->send(self::operate_query_refund);
 		if(!is_null($ends)){
-			$keys = [];
+			$keys = ['return_code', 'result_code', 'device_info', 'transaction_id', 'out_trade_no', 'total_fee', 'settlement_total_fee', 'cash_fee', 'refund_count'];
 			return $clip ? $this->clip($ends, $keys) : $ends;
 		}
 		return null;
@@ -306,10 +219,7 @@ class Pay {
 		$long = $this->urls[self::operate_qrcode_create] . '?' . implode('&', $datas);
 		$short = $this->qrcodec($long);
 		$image = null; /* ? */
-		return [
-			'long_url'=>$long, 
-			'short_url'=>$short, 
-			'image'=>$image];
+		return ['long_url'=>$long, 'short_url'=>$short, 'image'=>$image];
 	}
 	
 	/**
@@ -319,26 +229,67 @@ class Pay {
 		$this->data('long_url', $url);
 		$ends = $this->send(self::operate_qrcode_change);
 		if(!is_null($ends)){
-			$keys = [
-				'short_url'];
+			$keys = ['short_url'];
 			return $clip ? $this->clip($ends, $keys) : $ends;
 		}
 		return null;
 	}
 	
 	/**
-	 * public array function prepare(integer $operate)
 	 */
-	public function prepare(int $operate): array {
+	public function notify(): array {
+		$xml = $GLOBALS['HTTP_RAW_POST_DATA'] ?? null;
+		if(is_null($xml)) return [];
+		$helper = new Translator();
+		$datas = $helper->parseXML($xml);
+		$sign = $this->sign($datas);
+		if(strtolower($datas['return_code']) == 'fail'){
+			$code = '10000';
+			$msg = $datas['return_msg'];
+			throw new PayException($msg, $code);
+			return null;
+		}elseif(strtolower($datas['result_code']) == 'fail'){
+			$code = '20000';
+			$msg = $datas['error_code'] . ':' . $datas['error_msg'];
+			throw new PayException($msg, $code);
+			return null;
+		}elseif($datas['sign'] != $sign){
+			$code = '30000';
+			$msg = 'sign error';
+			throw new PayException($msg, $code);
+			return null;
+		}else
+			return $datas;
+	}
+	
+	/**
+	 * public void function replay(string $code, ?string $message = null)
+	 */
+	public function reply(string $code, string $message = null): void {
+		$this->data('return_code', $code);
+		if(!is_null($message)) $this->data('reutrn_msg', $message);
+		$datas = $this->prepare(self::operate_reply, false);
+		$helper = new Translator();
+		$xml = $helper->createXML($datas);
+		header('Content-type: text/xml');
+		echo $xml;
+	}
+	
+	/**
+	 * public array function prepare(integer $operate, boolean $primary=true)
+	 */
+	public function prepare(int $operate, bool $primary = true): array {
 		$params = $this->map($operate);
 		if(is_null($params)) return [];
 		foreach($params as $param){
 			if(isset($this->datas[$param])) $datas[$param] = $this->datas[$param];
 		}
-		$datas['appid'] = $this->appid;
-		$datas['mch_id'] = $this->mchid;
-		$datas['nonce_str'] = $this->rand();
-		$datas['sign'] = $this->sign($datas);
+		if($primary){
+			$datas['appid'] = $this->appid;
+			$datas['mch_id'] = $this->mchid;
+			$datas['nonce_str'] = $this->rand();
+			$datas['sign'] = $this->sign($datas);
+		}
 		return $datas;
 	}
 	

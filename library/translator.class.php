@@ -1,6 +1,6 @@
 <?php
 // declare(strict_types = 1);
-namespace SporeAura\Nooper;
+namespace Nooper;
 
 use DOMDocument;
 use DOMElement;

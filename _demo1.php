@@ -9,13 +9,5 @@ function uniqidReal(int $len = 13) {
 		return strtoupper($str);
 }
 
-	$dt = new DateTime();
-	$dt->setTimezone(new DateTimeZone('Asia/Shanghai'));
-		$datas['stamp'] = $dt->getTimestamp();
-		$datas['format']=$dt->format('YmdHis');
-		print_r($datas);
-		$dt->add(new DateInterval('PT3600S'));
-		$datas['stamp'] = $dt->getTimestamp();
-		$datas['format']=$dt->format('YmdHis');
-		print_r($datas);
+var_dump(file_get_contents("php://input"));
 ?>
