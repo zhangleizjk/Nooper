@@ -50,7 +50,14 @@ class Translator {
 			$child = $doc->createElement(is_string($key) ? $key : 'node');
 			$node->appendChild($child);
 			if(is_array($data)) $this->createXML($data, $doc, $child, $cdata, $doctype);
-			elseif(is_scalar($data) or is_null($data)){
+			else{
+				if(is_string($data)) $data = trim($data);
+				elseif(is_numeric($data)) $data = (string)$data;
+				elseif(is_bool($data)) $data = $data ? 'true' : 'false';
+				elseif(is_null($data)) $data = '';
+				elseif(is_object($data)) $data = get_class($data);
+				elseif(is_resource($data)) $data = get_resource_type($data);
+				else $data = '';
 				$end = $cdata ? $doc->createCDATASection($data) : $doc->createTextNode($data);
 				$child->appendChild($end);
 			}
