@@ -9,5 +9,12 @@ function uniqidReal(int $len = 13) {
 		return strtoupper($str);
 }
 
-var_dump(file_get_contents("php://input"));
+include_once './library/translator.class.php';
+$helper=new \Nooper\Translator();
+$datas=['id'=>'0001', 'name'=>'tom', [
+	'a1'=>'中国的人',
+	'a2'=>13
+]];
+$end=$helper->createXML($datas);
+var_dump($end);
 ?>
