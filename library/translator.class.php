@@ -4,7 +4,6 @@ namespace Nooper;
 
 use DOMDocument;
 use DOMElement;
-use DOMException;
 
 class Translator {
 	
@@ -39,38 +38,36 @@ class Translator {
 	}
 	
 	/**
-	 * public string function createXML(array $datas DOMDocument $doc = null, DOMElement $node = null, boolean $cdata = true)
+	 * public string function createXML(array $datas, DOMDocument $doc = null, DOMElement $node = null, boolean $cdata = true, boolean $doctype = false)
 	 */
-	public function createXML(array $datas, DOMDocument $doc = null, DOMElement $node = null, bool $cdata = true): string {
+	public function createXML(array $datas, DOMDocument $doc = null, DOMElement $node = null, bool $cdata = true, bool $doctype = false): string {
 		if(is_null($doc)) $doc = new DOMDocument('1.0', 'utf-8');
 		if(is_null($node)){
 			$node = $doc->createElement('xml');
 			$doc->appendChild($node);
 		}
 		foreach($datas as $key => $data){
-			$childNode = $doc->createElement(is_string($key) ? $key : 'node');
-			$node->appendChild($childNode);
-			if(is_array($data)) $this->createXML($data, $doc, $childNode, $cdata);
-			else $leaf = $cdata ? $doc->createCDATASection($data) : $doc->createTextNode($data);
-			$childNode->appendChild($leaf);
+			$child = $doc->createElement(is_string($key) ? $key : 'node');
+			$node->appendChild($child);
+			if(is_array($data)) $this->createXML($data, $doc, $child, $cdata, $doctype);
+			elseif(is_scalar($data) or is_null($data)){
+				$end = $cdata ? $doc->createCDATASection($data) : $doc->createTextNode($data);
+				$child->appendChild($end);
+			}
 		}
-		try{
-			$end = $doc->saveXML();
-		}catch(DOMException $err){
-			$end = '';
-		}
-		return $end;
+		return $doctype ? $doc->saveXML() : $doc->saveXML($node);
 	}
 	
 	/**
-	 * public array function parseXML(string $xml)
+	 * public mixed function parseXML(string $xml, boolean $root = false)
 	 */
-	public function parseXML(string $xml, bool $root = false){
-		if($root)$xml='<xml>'.$xml.'</xml>';
+	public function parseXML(string $xml, bool $root = false) {
+		if($root) $xml = '<xml>' . $xml . '</xml>';
+		$doctype = '<?xml version="1.0" encoding="utf-8"?>';
+		$xml = $doctype . $xml;
 		$doc = new DOMDocument('1.0', 'utf-8');
-		$doc->loadXML($xml);
+		if(!$doc->loadXML($xml, LIBXML_NOBLANKS | LIBXML_NOERROR)) return null;
 		$node = $doc->documentElement;
-		$name = $node->nodeName;
 		$children = $node->childNodes;
 		$yesNodeTypes = [XML_TEXT_NODE, XML_CDATA_SECTION_NODE, XML_ELEMENT_NODE];
 		$yesEndNodeTypes = [XML_TEXT_NODE, XML_CDATA_SECTION_NODE];
@@ -78,8 +75,7 @@ class Translator {
 			if(!in_array($child->nodeType, $yesNodeTypes, true)) $node->removeChild($child);
 		}
 		$length = $children->length;
-		
-		if(0 == $length) $datas = null;
+		if(0 == $length) $datas = '';
 		elseif(1 == $length && in_array($children->item(0)->nodeType, $yesEndNodeTypes, true)) $datas = $child->wholeText;
 		else{
 			$datas = [];
@@ -87,11 +83,11 @@ class Translator {
 				if(in_array($child->nodeType, $yesEndNodeTypes, true)){
 					$datas[] = $child->wholeText;
 				}else{
-					$datas[$child->nodeName] = $this->parseXML($doc->saveXML($child));
+					if('node' == $child->nodeName) $datas[] = $this->parseXML($doc->saveXML($child));
+					else $datas[$child->nodeName] = $this->parseXML($doc->saveXML($child));
 				}
 			}
 		}
-		
 		return $datas;
 	}
 	//

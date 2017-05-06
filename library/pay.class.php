@@ -3,6 +3,7 @@
 namespace Nooper;
 
 use Throwable;
+use Exception;
 use DateTime;
 use DateTimeZone;
 use DateInterval;
@@ -18,8 +19,8 @@ class Pay {
 	const operate_download = 6;
 	const operate_qrcode_create = 7;
 	const operate_qrcode_change = 8;
-	const operate_callback_req = 9;
-	const operate_callback_rsp = 10;
+	const operate_callback_input = 9;
+	const operate_callback_output = 10;
 	const operate_notify = 11;
 	const operate_reply = 12;
 	
@@ -236,6 +237,40 @@ class Pay {
 	}
 	
 	/**
+	 * public ?array function callbackin(boolean $clip = true)
+	 */
+	public function callbackInput(bool $clip = true): array {
+		$xml = $GLOBALS['HTTP_RAW_POST_DATA'] ?? null;
+		$helper = new Translator();
+		$datas = $helper->parseXML($xml);
+		$sign = $this->sign($datas);
+		if(!isset($datas['sign'])){
+			$code = '30001';
+			$message = 'no sign data';
+			throw new Exception($message, $code);
+			return null;
+		}elseif($datas['sign'] != $sign){
+			$code = '30000';
+			$message = 'sign error';
+			throw new Exception($message, $code);
+			return null;
+		}
+		$keys = ['openid', 'product_id'];
+		return $clip ? $this->clip($datas, $keys) : $datas;
+	}
+	
+	/**
+	 * public void function callbackOutput(void)
+	 */
+	public function callbackOutput(): void {
+		$datas = $this->prepare(self::operate_callback_output);
+		$helper = new Translator();
+		$xml = $helper->createXML($datas);
+		header('Content-type: text/xml');
+		echo $xml;
+	}
+	
+	/**
 	 */
 	public function notify(): array {
 		$xml = $GLOBALS['HTTP_RAW_POST_DATA'] ?? null;
@@ -322,12 +357,12 @@ class Pay {
 	}
 	
 	/**
+	 * public ?string sign(array $datas)
 	 */
 	public function sign(array $datas): string {
 		foreach($datas as $key => $data){
-			if(!is_string($key)) unset($datas[$key]);
-			elseif(!is_scalar($data)) unset($datas[$key]);
-			elseif('' === $data) unset($datas[$key]);
+			if(!is_string($key) or !is_string($key)) return null;
+			elseif('' == $data) unset($datas[$key]);
 			elseif('sign' == $key) unset($datas[$key]);
 		}
 		ksort($datas);
