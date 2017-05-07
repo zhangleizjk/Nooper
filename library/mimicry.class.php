@@ -55,7 +55,6 @@ class Mimicry {
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		$end = curl_exec($ch);
-		die($end);
 		if(is_bool($end)) $end = '{"errcode":-12,"errmsg":"'.curl_error($ch).'"}';
 		curl_close($ch);
 		return $end;

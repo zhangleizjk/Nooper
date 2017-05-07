@@ -17,4 +17,6 @@ $datas=['id'=>'0001', 'name'=>'tom', [
 ]];
 $end=$helper->createXML($datas);
 var_dump($end);
+
+var_dump(file_get_contents('php://input'));
 ?>
