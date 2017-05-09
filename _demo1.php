@@ -10,13 +10,12 @@ function uniqidReal(int $len = 13) {
 }
 
 include_once './library/translator.class.php';
-$helper=new \Nooper\Translator();
-$datas=['id'=>'0001', 'name'=>'tom', [
-	'a1'=>'中国的人',
-	'a2'=>13
-]];
-$end=$helper->createXML($datas);
-var_dump($end);
-
-var_dump(file_get_contents('php://input'));
+include_once './library/mimicry.class.php';
+$mi=new \Nooper\Mimicry();
+$data=$mi->post('http://127.0.0.1/demo2.php', '');
+header ( "Content-Description: File Transfer" );
+header ( 'Content-disposition: attachment; filename=bbb.pdf' ); // 文件名
+header ( "Content-Type: application/zip" ); // zip格式的
+header ( "Content-Transfer-Encoding: binary" ); // 告诉浏览器，二进制文件
+echo $data;
 ?>
