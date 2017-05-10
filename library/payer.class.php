@@ -170,12 +170,11 @@ class Payer {
 		'long_url'
 	];
 	protected $callbackInputParams = [
+		[], 
 		[
 			'openid', 
-			'is_subscribe', 
 			'product_id'
-		], 
-		[]
+		]
 	];
 	protected $callbackOutputParams = [
 		[
@@ -190,10 +189,13 @@ class Payer {
 	protected $notifyParams = [
 		[], 
 		[
+			'return_code', 
+			'result_code', 
+			'trade_type', 
+			'device_info', 
 			'transaction_id', 
 			'out_trade_no', 
 			'openid', 
-			'trade_type', 
 			'total_fee', 
 			'settlement_total_fee', 
 			'cash_fee', 
@@ -221,7 +223,7 @@ class Payer {
 		$keys = array_merge($keys, $this->notifyParams[0], $this->replyParams[0]);
 		$this->params = array_merge(array_unique($keys));
 		
-		$this->url(self::operate_notify, $notify_url);
+		$this->urls[self::operate_notify]=$notify_url;
 		$this->key = $app_key;
 		$this->mchid = $mch_id;
 		$this->appid = $app_id;
@@ -375,7 +377,7 @@ class Payer {
 	}
 	
 	/**
-	 * public array function qrcode(string $prodouctId, ?string $timestamp = null)
+	 * public array function qrcode(string $prodouct_id, ?string $timestamp = null)
 	 */
 	public function qrcode(string $productId): array {
 		$this->data('product_id', $productId);
@@ -384,14 +386,9 @@ class Payer {
 		foreach($datas as $key => &$data){
 			$data = ($key . '=' . $data);
 		}
-		$long = $this->urls[self::operate_qrcode_create] . '?' . implode('&', $datas);
-		$short = $this->qrcodec($long);
-		$image = null; /* ? */
-		return [
-			'long_url'=>$long, 
-			'short_url'=>$short, 
-			'image'=>$image
-		];
+		$ends['long_url'] = $this->urls[self::operate_qrcode_create] . '?' . implode('&', $datas);
+		$ends['short_url'] = $this->qrcodec($ends['long_url']);
+		return $ends;
 	}
 	
 	/**
@@ -407,6 +404,29 @@ class Payer {
 			return $clip ? $this->clip($ends, $keys) : $ends;
 		}
 		return null;
+	}
+	
+	/**
+	 * public ?array function question(boolean $clip = true)
+	 */
+	public function question(bool $clip = true): array {
+		$xml = file_get_contents('php://input');
+		$ends = $this->filter($xml);
+		if(!is_null($ends)) return $clip ? $this->clip(self::operate_callback_input, $ends) : $ends;
+		return null;
+	}
+	
+	/**
+	 * public void function answer(void)
+	 */
+	public function answer(): void {
+		$datas = $this->prepare(self::operate_reply, false);
+		$helper = new Translator();
+		$xml = $helper->createXML($datas);
+		header('Cache-Control: no-cache');
+		header('Pragma: no-cache');
+		header('Content-type: text/xml');
+		echo $xml;
 	}
 	
 	/**
@@ -428,33 +448,8 @@ class Payer {
 		$datas = $this->prepare(self::operate_reply, false);
 		$helper = new Translator();
 		$xml = $helper->createXML($datas);
-		header('Content-type: text/xml');
-		echo $xml;
-	}
-	
-	/**
-	 * public ?array function callbackin(boolean $clip = true)
-	 */
-	public function callbackInput(bool $clip = true): array {
-		$xml = $GLOBALS['HTTP_RAW_POST_DATA'] ?? null;
-		$helper = new Translator();
-		$datas = $helper->parseXML($xml);
-		$sign = $this->sign($datas);
-		
-		$keys = [
-			'openid', 
-			'product_id'
-		];
-		return $clip ? $this->clip($datas, $keys) : $datas;
-	}
-	
-	/**
-	 * public void function callbackOutput(void)
-	 */
-	public function callbackOutput(): void {
-		$datas = $this->prepare(self::operate_callback_output);
-		$helper = new Translator();
-		$xml = $helper->createXML($datas);
+		header('Cache-Control: no-cache');
+		header('Pragma: no-cache');
 		header('Content-type: text/xml');
 		echo $xml;
 	}
