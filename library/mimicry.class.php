@@ -147,9 +147,8 @@ class Mimicry {
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		$end = curl_exec($ch);
 		if(is_bool($end)){
-			$code = '10001';
-			$message = $this->get_error_code(curl_errno($ch));
-			throw new Exception($message, $code);
+			$code = $this->get_error_code(curl_errno($ch));
+			throw new Exception('', $code);
 			return null;
 		}
 		curl_close($ch);

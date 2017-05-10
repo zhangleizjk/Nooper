@@ -47,7 +47,7 @@ class Payer {
 	];
 	protected $params = [];
 	protected $createParams = [
-		'from'=>[
+		[
 			'trade_type', 
 			'device_info', 
 			'out_trade_no', 
@@ -64,7 +64,7 @@ class Payer {
 			'time_expire', 
 			'attach'
 		], 
-		'to'=>[
+		[
 			'return_code', 
 			'result_code', 
 			'trade_type', 
@@ -73,11 +73,11 @@ class Payer {
 		]
 	];
 	protected $queryParams = [
-		'from'=>[
+		[
 			'transaction_id', 
 			'out_trade_no'
 		], 
-		'to'=>[
+		[
 			'return_code', 
 			'result_code', 
 			'trade_type', 
@@ -94,16 +94,16 @@ class Payer {
 		]
 	];
 	protected $closeParams = [
-		'from'=>[
+		[
 			'out_trade_no'
 		], 
-		'to'=>[
+		[
 			'return_code', 
 			'result_code'
 		]
 	];
 	protected $refundParams = [
-		'from'=>[
+		[
 			'transaction_id', 
 			'out_trade_no', 
 			'out_refund_no', 
@@ -113,7 +113,7 @@ class Payer {
 			'refund_account', 
 			'op_user_id'
 		], 
-		'to'=>[
+		[
 			'return_code', 
 			'result_code', 
 			'transaction_id', 
@@ -130,7 +130,7 @@ class Payer {
 		]
 	];
 	protected $refundQueryParams = [
-		'from'=>[
+		[
 			'device_info', 
 			'transaction_id', 
 			'out_trade_no', 
@@ -141,7 +141,7 @@ class Payer {
 			'refund_account', 
 			'op_user_id'
 		], 
-		'to'=>[
+		[
 			'return_code', 
 			'result_code', 
 			'device_info', 
@@ -154,13 +154,13 @@ class Payer {
 		]
 	];
 	protected $downloadParams = [
-		'from'=>[
+		[
 			'device_info', 
 			'bill_date', 
 			'bill_type', 
 			'tar_type'
 		], 
-		'to'=>[]
+		[]
 	];
 	protected $qrcodeCreateParams = [
 		'product_id', 
@@ -170,50 +170,61 @@ class Payer {
 		'long_url'
 	];
 	protected $callbackInputParams = [
-		'from'=>[
+		[
 			'openid', 
 			'is_subscribe', 
 			'product_id'
 		], 
-		'to'=>[]
+		[]
 	];
 	protected $callbackOutputParams = [
-		'from'=>[
+		[
 			'return_code', 
 			'return_msg', 
 			'prepay_id', 
 			'result_code', 
 			'err_code_des'
 		], 
-		'to'=>[]
+		[]
 	];
 	protected $notifyParams = [
-		'from'=>[], 
-		'to'=>[]
+		[], 
+		[
+			'transaction_id', 
+			'out_trade_no', 
+			'openid', 
+			'trade_type', 
+			'total_fee', 
+			'settlement_total_fee', 
+			'cash_fee', 
+			'coupon_fee', 
+			'time_end', 
+			'attach'
+		]
 	];
 	protected $replyParams = [
-		'from'=>[
+		[
 			'return_code', 
 			'return_msg'
 		], 
-		'to'=>[]
+		[]
 	];
 	
 	/**
-	 * public void function __construct(string appid, string $mchid, string $key, string $notify)
+	 * public void function __construct(string $app_id, string $mch_id, string $app_key, string $notify_url)
 	 */
-	public function __construct(string $appid, string $mchid, string $key, string $notify) {
-		$keys = array_merge($this->createParams['from'], $this->queryParams['from'], $this->closeParams['from']);
-		$keys = array_merge($keys, $this->refundParams['from'], $this->refundQueryParams['from'], $this->downloadParams['from']);
-		$keys = array_merge($keys, $this->qrcodeCreateParams['from'], $this->qrcodeChangeParams['from']);
-		$keys = array_merge($keys, $this->callbackInputParams['from'], $this->callbackOuputParams['from']);
-		$keys = array_merge($keys, $this->notifyParams['from'], $this->refundParams['from']);
+	public function __construct(string $app_id, string $mch_id, string $app_key, string $notify_url) {
+		$keys = array_merge($this->createParams[0], $this->queryParams[0], $this->closeParams[0]);
+		$keys = array_merge($keys, $this->refundParams[0], $this->refundQueryParams[0], $this->downloadParams[0]);
+		$keys = array_merge($keys, $this->qrcodeCreateParams[0], $this->qrcodeChangeParams[0]);
+		$keys = array_merge($keys, $this->callbackInputParams[0], $this->callbackOuputParams[0]);
+		$keys = array_merge($keys, $this->notifyParams[0], $this->replyParams[0]);
 		$this->params = array_merge(array_unique($keys));
 		
-		$this->url(self::operate_notify, $notify);
-		$this->key = $key;
-		$this->mchid = $mchid;
-		$this->appid = $appid;
+		$this->url(self::operate_notify, $notify_url);
+		$this->key = $app_key;
+		$this->mchid = $mch_id;
+		$this->appid = $app_id;
 	}
 	
 	/**
@@ -224,27 +235,27 @@ class Payer {
 	}
 	
 	/**
-	 * public string function appid(string $appid)
+	 * public string function app(string $app_id)
 	 */
-	public function appid(string $appid): string {
-		$this->appid = $appid;
-		return $appid;
+	public function app(string $app_id): string {
+		$this->appid = $app_id;
+		return $app_id;
 	}
 	
 	/**
-	 * public string function mchid(string $mchid)
+	 * public string function mch(string $mch_id)
 	 */
-	public function mchid(string $mchid): string {
-		$this->mchid = $mchid;
-		return $mchid;
+	public function mch(string $mch_id): string {
+		$this->mchid = $mch_id;
+		return $mch_id;
 	}
 	
 	/**
-	 * public string function key(string $data)
+	 * public string function key(string $app_key)
 	 */
-	public function key(string $data): string {
-		$this->key = $data;
-		return $data;
+	public function key(string $app_key): string {
+		$this->key = $app_key;
+		return $app_key;
 	}
 	
 	/**
@@ -260,11 +271,11 @@ class Payer {
 	}
 	
 	/**
-	 * public boolean function data(string $name, string $value)
+	 * public boolean function data(string $key, string $param)
 	 */
-	public function data(string $name, string $value): bool {
-		if(in_array($name, $this->params, true)){
-			$this->datas[$name] = $value;
+	public function data(string $key, string $param): bool {
+		if(in_array($key, $this->params, true)){
+			$this->datas[$key] = $param;
 			return true;
 		}
 		return false;
@@ -338,13 +349,29 @@ class Payer {
 	}
 	
 	/**
-	 * public ?array function download(boolean $clip = true)
+	 * public ?array function download(boolean $compress = true)
 	 */
-	public function download(bool $clip = true): array {
-		// $this->data('tar_type', 'GZIP');
-		// $ends = $this->send(self::operate_download);
-		// if(!is_null($ends)) return $clip ? $this->clip(self::operate_down, $ends) : $ends;
-		// return null;
+	public function download(bool $compress = true): array {
+		$this->data('tar_type', $compress ? 'GZIP' : null);
+		$datas = $this->prepare(self::operate_download);
+		$url = $this->urls[self::operate_download];
+		$helper = new Translator();
+		$xml = $helper->createXML($datas);
+		$mimicry = new Mimicry();
+		$end = $mimicry->post($url, $xml);
+		//
+		$file_type = $compress ? 'application/zip' : 'text/plain';
+		$file_basic_name = $datas['bill_date'] ?? 'bill';
+		$file_extra_name = $compress ? 'gzip' : 'txt';
+		$file_name = $file_basic_name . '.' . $file_extra_name;
+		//
+		header('Cache-Control: no-cache');
+		header('Pragma: no-cache');
+		header('Content-Description: File Transfer');
+		header('Content-Type: ' . $file_type);
+		header('Content-Disposition: attachment; filename=' . $file_name);
+		header('Content-Transfer-Encoding: binary');
+		echo $end;
 	}
 	
 	/**
@@ -386,24 +413,10 @@ class Payer {
 	 * public ?array function notify(boolean $clip = true)
 	 */
 	public function notify(bool $clip = true): array {
-		// $xml = $GLOBALS['HTTP_RAW_POST_DATA'] ?? '';
 		$xml = file_get_contents('php://input');
-		$datas = $this->filter($xml);
-		if(!is_null($datas)){
-			$keys = [
-				'transaction_id', 
-				'out_trade_no', 
-				'openid', 
-				'trade_type', 
-				'total_fee', 
-				'settlement_total_fee', 
-				'cash_fee', 
-				'coupon_fee', 
-				'time_end', 
-				'attach'
-			];
-			return $clip ? $this->clip($datas, $keys) : $datas;
-		}
+		$ends = $this->filter($xml);
+		if(!is_null($ends)) return $clip ? $this->clip(self::operate_notify, $ends) : $ends;
+		return null;
 	}
 	
 	/**
@@ -427,17 +440,7 @@ class Payer {
 		$helper = new Translator();
 		$datas = $helper->parseXML($xml);
 		$sign = $this->sign($datas);
-		if(!isset($datas['sign'])){
-			$code = '30001';
-			$message = 'no sign data';
-			throw new Exception($message, $code);
-			return null;
-		}elseif($datas['sign'] != $sign){
-			$code = '30000';
-			$message = 'sign error';
-			throw new Exception($message, $code);
-			return null;
-		}
+		
 		$keys = [
 			'openid', 
 			'product_id'
@@ -462,7 +465,7 @@ class Payer {
 	public function prepare(int $operate, bool $primary = true): array {
 		$params = $this->map($operate);
 		if(is_null($params)) return [];
-		foreach($params['from'] as $param){
+		foreach($params as $param){
 			if(isset($this->datas[$param])) $datas[$param] = $this->datas[$param];
 		}
 		if($primary){
@@ -479,125 +482,32 @@ class Payer {
 	 */
 	public function send(int $operate, array $datas = null): array {
 		$datas = $datas ?? $this->prepare($operate);
-		if(!$datas) return null;
+		if(!$datas){
+			$code = 10001;
+			$message = 'WeChat_Pay_Empty_Data_Error';
+			$this->error($code, $message);
+			return null;
+		}
 		$url = $this->urls[$operate] ?? null;
-		if(is_null($url)) return null;
+		if(is_null($url)){
+			$code = 10002;
+			$message = 'WeChat_Pay_Empty_Operate_Error';
+			$this->error($code, $message);
+			return null;
+		}
 		$translator = new Translator();
 		$xml = $translator->createXML($datas);
+		//
 		$mimicry = new Mimicry();
-		$end = $mimicry->post($url, $xml);
+		try{
+			$end = $mimicry->post($url, $xml);
+		}catch(Exception $e){
+			$code = 20001;
+			$message = 'WeChat_Pay_Curl_Error[' . $e->getCode() . ']';
+			$this->error($code, $message);
+			return null;
+		}
 		return $this->filter($end);
-	}
-	
-	/**
-	 * protected ?array function filter(string $xml)
-	 */
-	protected function filter(string $xml): array {
-		$helper = new Translator();
-		$datas = $helper->parseXML($xml);
-		if(!is_array($datas)) return $this->error('10001', '');
-		elseif(!isset($datas['sign'])) return $this->error('40001', '');
-		$sign = $this->sign($datas);
-		if(strtolower($datas['return_code']) == 'fail'){
-			$code = '20001';
-			$message = $datas['return_msg'];
-			return $this->error($code, $message);
-		}elseif(strtolower($datas['result_code']) == 'fail'){
-			$code = '30001';
-			$message = $datas['error_code'] . ':' . $datas['error_msg'];
-			return $this->error($code, $message);
-		}elseif($datas['sign'] != $sign) return $this->error('40002', 'sign failure');
-		return $datas;
-	}
-	
-	/**
-	 * public ?string sign(array $datas)
-	 */
-	public function sign(array $datas): string {
-		foreach($datas as $key => $data){
-			if(!is_string($key) or !is_string($key)) return null;
-			elseif('' == $data) unset($datas[$key]);
-			elseif('sign' == $key) unset($datas[$key]);
-		}
-		ksort($datas);
-		foreach($datas as $key => $data){
-			$params[] = $key . '=' . $data;
-		}
-		$params[] = ('key=' . $this->key);
-		$str = implode('&', $params);
-		return strtoupper(md5($str));
-	}
-	
-	/**
-	 * protected ?array function map(int $operate)
-	 */
-	protected function map(int $operate): array {
-		switch($operate){
-			case self::operate_create:
-				return $this->createParamss;
-				break;
-			case self::operate_query:
-				return $this->queryParams;
-				break;
-			case self::operate_close:
-				return $this->closeParams;
-				break;
-			case self::operate_refund:
-				return $this->refundParams;
-				break;
-			case self::operate_refund_query:
-				return $this->refundQueyParams;
-				break;
-			case self::operate_download:
-				return $this->downloadParams;
-				break;
-			case self::operate_qrcode_create:
-				return $this->qrcodeCreateParams;
-				break;
-			case self::operate_qrcode_change:
-				return $this->qrcodeChangeParams;
-				break;
-			case self::operate_callback_input:
-				return $this->callbackInputParams;
-				break;
-			case self::operate_callback_output:
-				return $this->callbackParams;
-				break;
-			case self::operate_notify:
-				return $this->notifyParams;
-				break;
-			case self::operate_reply:
-				return $this->replyParams;
-				break;
-			default:
-				return null;
-				break;
-		}
-	}
-	
-	/**
-	 * protected array function clip(array $datas, array $keys)
-	 */
-	protected function clip(array $datas, array $keys): array {
-		foreach($keys as $key){
-			if(is_string($key) && isset($datas[$key])){
-				$ends[$key] = $datas[$key];
-			}
-			return $ends ?? [];
-		}
-	}
-	
-	/**
-	 * protected string function rand(integer $len = 30)
-	 */
-	protected function rand(int $len = 30): string {
-		$str = '';
-		$chars = array_merge(range('0', '9'), range('a', 'z'));
-		$end = count($chars) - 1;
-		for($i = 0;$i < $len;$i++){
-			$str .= $chars[mt_rand(0, $end)];
-		}
-		return strtoupper($str);
 	}
 	
 	/**
@@ -606,70 +516,153 @@ class Payer {
 	public function now(int $seconds = 0): array {
 		$dt = new DateTime();
 		$dt->setTimezone(new DateTimeZone('Asia/Shanghai'));
-		$dt->add(new DateInterval('PT' . $seconds . 'S'));
+		try{
+			$dt->add(new DateInterval('PT' . $seconds . 'S'));
+		}catch(Exception $e){
+		}
 		$datas['stamp'] = $dt->getTimestamp();
-		$datas['format'] = $dt->format('YmdHis');
+		$datas['datetime'] = $dt->format('YmdHis');
+		$datas['date'] = $dt->format('Ymd');
 		return $datas;
 	}
 	
 	/**
-	 * protected void function error(string $code, string $mssage)
+	 * public ?string sign(array $datas)
+	 */
+	public function sign(array $datas): string {
+		foreach($datas as $key => $data){
+			if(!is_string($key) or !is_string($data)) return null;
+			elseif('sign' == $key) unset($datas[$key]);
+			elseif('' == $data) unset($datas[$key]);
+		}
+		if(!$datas) return null;
+		ksort($datas);
+		foreach($datas as $key => $data){
+			$params[] = $key . '=' . $data;
+		}
+		$params[] = ('key=' . $this->key);
+		return strtoupper(md5(implode('&', $params)));
+	}
+	
+	/**
+	 * protected ?array function filter(string $xml)
+	 */
+	protected function filter(string $xml): array {
+		if('' == $xml){
+			$code = 30001;
+			$message = 'WeChat_Pay_Return_Empty_Data_Error';
+			$this->error($code, $message);
+		}
+		$helper = new Translator();
+		$datas = $helper->parseXML($xml);
+		if(!is_array($datas)){
+			$code = 30002;
+			$message = 'WeChat_Pay_XML_Format_Error';
+			return $this->error($code, $message);
+		}
+		foreach($datas as $data){
+			if(!is_string($data)){
+				$code = 30002;
+				$message = 'WeChat_Pay_XML_Format_Error';
+				return $this->error($code, $message);
+			}
+		}
+		if(!isset($datas['return_code']) or strtolower($datas['return_code']) == 'fail'){
+			$code = 40001;
+			$message = 'WeChat_Pay_Comm_Error';
+			return $this->error($code, $message);
+		}elseif(!isset($datas['result_code']) or strtolower($datas['result_code']) == 'fail'){
+			$code = 50001;
+			$message = 'WeChat_Pay_Trade_Error[' . $datas['err_code'] ?? 'NO_Des' . ']';
+			return $this->error($code, $message);
+		}elseif(!isset($datas['sign']) or $datas['sign'] != $this->sign($datas)){
+			$code = 60001;
+			$message = 'WeChat_Pay_Sign_Error';
+			return $this->error($code, $message);
+		}
+		return $datas;
+	}
+	
+	/**
+	 * protected void function error(string $code, string $message)
 	 */
 	protected function error(string $code, string $message): void {
 		throw new Exception($message, $code);
 	}
+	
+	/**
+	 * protected array function clip(integer $operate, array $datas)
+	 */
+	protected function clip(int $operate, array $datas): array {
+		$keys = $this->map($operate, false);
+		if(is_null($keys)) return $datas;
+		foreach($keys as $key){
+			if(is_string($key) && isset($datas[$key])) $ends[$key] = $datas[$key];
+		}
+		return $ends ?? $datas;
+	}
+	
+	/**
+	 * protected string function rand(integer $length = 30)
+	 */
+	protected function rand(int $length = 30): string {
+		$str = '';
+		$chars = array_merge(range('0', '9'), range('a', 'z'));
+		$end = count($chars) - 1;
+		for($i = 0; $i < $length; $i++){
+			$str .= $chars[mt_rand(0, $end)];
+		}
+		return strtoupper($str);
+	}
+	
+	/**
+	 * protected ?array function map(int $operate, boolean $send = true)
+	 */
+	protected function map(int $operate, bool $send = true): array {
+		switch($operate){
+			case self::operate_create:
+				return $this->createParams[$send ? 0 : 1];
+				break;
+			case self::operate_query:
+				return $this->queryParams[$send ? 0 : 1];
+				break;
+			case self::operate_close:
+				return $this->closeParams[$send ? 0 : 1];
+				break;
+			case self::operate_refund:
+				return $this->refundParams[$send ? 0 : 1];
+				break;
+			case self::operate_refund_query:
+				return $this->refundQueyParams[$send ? 0 : 1];
+				break;
+			case self::operate_download:
+				return $this->downloadParams[$send ? 0 : 1];
+				break;
+			case self::operate_qrcode_create:
+				return $this->qrcodeCreateParams[$send ? 0 : 1];
+				break;
+			case self::operate_qrcode_change:
+				return $this->qrcodeChangeParams[$send ? 0 : 1];
+				break;
+			case self::operate_callback_input:
+				return $this->callbackInputParams[$send ? 0 : 1];
+				break;
+			case self::operate_callback_output:
+				return $this->callbackParams[$send ? 0 : 1];
+				break;
+			case self::operate_notify:
+				return $this->notifyParams[$send ? 0 : 1];
+				break;
+			case self::operate_reply:
+				return $this->replyParams[$send ? 0 : 1];
+				break;
+			default:
+				return null;
+				break;
+		}
+	}
 	//
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
