@@ -51,8 +51,8 @@ class Payer {
 			'trade_type', 
 			'device_info', 
 			'out_trade_no', 
-			'openid', 
 			'product_id', 
+			'openid', 
 			'body', 
 			'detail', 
 			'total_fee', 
@@ -104,6 +104,7 @@ class Payer {
 	];
 	protected $refundParams = [
 		[
+			'device_info', 
 			'transaction_id', 
 			'out_trade_no', 
 			'out_refund_no', 
@@ -122,9 +123,6 @@ class Payer {
 			'out_refund_no', 
 			'refund_fee', 
 			'settlement_refund_fee', 
-			'total_fee', 
-			'settlement_total_fee', 
-			'cash_fee', 
 			'cash_refund_fee', 
 			'coupon_refund_fee'
 		]
@@ -134,22 +132,14 @@ class Payer {
 			'device_info', 
 			'transaction_id', 
 			'out_trade_no', 
-			'out_refund_no', 
-			'total_fee', 
-			'refund_fee', 
-			'refund_fee_type', 
-			'refund_account', 
-			'op_user_id'
+			'refund_id', 
+			'out_refund_no'
 		], 
 		[
 			'return_code', 
 			'result_code', 
-			'device_info', 
 			'transaction_id', 
 			'out_trade_no', 
-			'total_fee', 
-			'settlement_total_fee', 
-			'cash_fee', 
 			'refund_count'
 		]
 	];
@@ -223,7 +213,7 @@ class Payer {
 		$keys = array_merge($keys, $this->notifyParams[0], $this->replyParams[0]);
 		$this->params = array_merge(array_unique($keys));
 		
-		$this->urls[self::operate_notify]=$notify_url;
+		$this->urls[self::operate_notify] = $notify_url;
 		$this->key = $app_key;
 		$this->mchid = $mch_id;
 		$this->appid = $app_id;
@@ -309,7 +299,7 @@ class Payer {
 	 * public ?array function create(boolean $clip = true)
 	 */
 	public function create(bool $clip = true): array {
-		$ends = $this->send(self::operate_create);
+		$ends = $this->filter($this->send(self::operate_create));
 		if(!is_null($ends)) return $clip ? $this->clip(self::operate_create, $ends) : $ends;
 		return null;
 	}
@@ -318,7 +308,7 @@ class Payer {
 	 * public ?array function query(boolean $clip = true)
 	 */
 	public function query(bool $clip = true): array {
-		$ends = $this->send(self::operate_query);
+		$ends = $this->filter($this->send(self::operate_query));
 		if(!is_null($ends)) return $clip ? $this->clip(self::operate_query, $ends) : $ends;
 		return null;
 	}
@@ -327,7 +317,7 @@ class Payer {
 	 * pulblic ?array function close(boolean $clip = true)
 	 */
 	public function close(bool $clip = true): array {
-		$ends = $this->send(self::operate_close);
+		$ends = $this->filter($this->send(self::operate_close));
 		if(!is_null($ends)) return $clip ? $this->clip(self::operate_close, $ends) : $ends;
 		return null;
 	}
@@ -336,7 +326,7 @@ class Payer {
 	 * public ?array function refund(boolean $clip = true)
 	 */
 	public function refund(bool $clip = true): array {
-		$ends = $this->send(self::operate_refund);
+		$ends = $this->filter($this->send(self::operate_refund));
 		if(!is_null($ends)) return $clip ? $this->clip(self::operate_refund, $ends) : $ends;
 		return null;
 	}
@@ -345,34 +335,21 @@ class Payer {
 	 * public ?array function queryr(boolean $clip = true)
 	 */
 	public function queryr(bool $clip = true): array {
-		$ends = $this->send(self::operate_query_refund);
-		if(!is_null($ends)) return $clip ? $this->clip(self::operate_query_refund, $ends) : $ends;
+		$ends = $this->filter($this->send(self::operate_refund_query));
+		if(!is_null($ends)) return $clip ? $this->clip(self::operate_refund_query, $ends) : $ends;
 		return null;
 	}
 	
 	/**
-	 * public ?array function download(boolean $compress = true)
+	 * public ?array function download(boolean $pack = true)
 	 */
-	public function download(bool $compress = true): array {
-		$this->data('tar_type', $compress ? 'GZIP' : null);
-		$datas = $this->prepare(self::operate_download);
-		$url = $this->urls[self::operate_download];
-		$helper = new Translator();
-		$xml = $helper->createXML($datas);
-		$mimicry = new Mimicry();
-		$end = $mimicry->post($url, $xml);
-		//
-		$file_type = $compress ? 'application/zip' : 'text/plain';
-		$file_basic_name = $datas['bill_date'] ?? 'bill';
-		$file_extra_name = $compress ? 'gzip' : 'txt';
-		$file_name = $file_basic_name . '.' . $file_extra_name;
-		//
-		header('Cache-Control: no-cache');
-		header('Pragma: no-cache');
-		header('Content-Description: File Transfer');
-		header('Content-Type: ' . $file_type);
-		header('Content-Disposition: attachment; filename=' . $file_name);
-		header('Content-Transfer-Encoding: binary');
+	public function download(bool $pack = true): array {
+		$this->data('tar_type', $pack ? 'GZIP' : null);
+		$end = $this->send(self::operate_download);
+		$mime_type = $pack ? 'application/zip' : 'text/plain';
+		$file_basic_name = $this->datas['bill_date'] ?? 'bill';
+		$file_name = $file_basic_name . '.' . $pack ? 'gzip' : 'txt';
+		$this->transfer($mime_type, $file_name);
 		echo $end;
 	}
 	
@@ -455,15 +432,16 @@ class Payer {
 	}
 	
 	/**
-	 * public array function prepare(integer $operate, boolean $primary=true)
+	 * public ?array function prepare(integer $operate, boolean $primary=true)
 	 */
 	public function prepare(int $operate, bool $primary = true): array {
 		$params = $this->map($operate);
-		if(is_null($params)) return [];
+		if(is_null($params)) return $this->error(10001, 'Nooper_Pay_NO_Operate');
 		foreach($params as $param){
 			if(isset($this->datas[$param])) $datas[$param] = $this->datas[$param];
 		}
-		if($primary){
+		if(!isset($datas)) return $this->error(10002, 'Nooper_Pay_Empty_Prepare_Data');
+		elseif($primary){
 			$datas['appid'] = $this->appid;
 			$datas['mch_id'] = $this->mchid;
 			$datas['nonce_str'] = $this->rand();
@@ -476,33 +454,19 @@ class Payer {
 	 * public ?array function send(integer $operate, ?array $datas = null)
 	 */
 	public function send(int $operate, array $datas = null): array {
-		$datas = $datas ?? $this->prepare($operate);
-		if(!$datas){
-			$code = 10001;
-			$message = 'WeChat_Pay_Empty_Data_Error';
-			$this->error($code, $message);
-			return null;
-		}
 		$url = $this->urls[$operate] ?? null;
-		if(is_null($url)){
-			$code = 10002;
-			$message = 'WeChat_Pay_Empty_Operate_Error';
-			$this->error($code, $message);
-			return null;
-		}
+		if(is_null($url)) return $this->error(10001, 'Nooper_Pay_NO_Operate');
+		$datas = $datas ?? $this->prepare($operate);
+		if(!$datas) return $this->error(10002, 'Nooper_Pay_Empty_Prepare_Data');
 		$translator = new Translator();
 		$xml = $translator->createXML($datas);
-		//
 		$mimicry = new Mimicry();
 		try{
 			$end = $mimicry->post($url, $xml);
 		}catch(Exception $e){
-			$code = 20001;
-			$message = 'WeChat_Pay_Curl_Error[' . $e->getCode() . ']';
-			$this->error($code, $message);
-			return null;
+			return $this->error(20001, 'Nooper_Pay_Curl_Failure[' . $e->getMessage() . ']');
 		}
-		return $this->filter($end);
+		return $end;
 	}
 	
 	/**
@@ -543,38 +507,16 @@ class Payer {
 	 * protected ?array function filter(string $xml)
 	 */
 	protected function filter(string $xml): array {
-		if('' == $xml){
-			$code = 30001;
-			$message = 'WeChat_Pay_Return_Empty_Data_Error';
-			$this->error($code, $message);
-		}
+		if('' == $xml) return $this->error(30001, 'Nooper_Pay_Empty_Return_Data');
 		$helper = new Translator();
 		$datas = $helper->parseXML($xml);
-		if(!is_array($datas)){
-			$code = 30002;
-			$message = 'WeChat_Pay_XML_Format_Error';
-			return $this->error($code, $message);
-		}
+		if(!is_array($datas)) return $this->error(30002, 'Nooper_Pay_XML_Format_Error');
 		foreach($datas as $data){
-			if(!is_string($data)){
-				$code = 30002;
-				$message = 'WeChat_Pay_XML_Format_Error';
-				return $this->error($code, $message);
-			}
+			if(!is_string($data)) return $this->error(30002, 'Nooper_Pay_XML_Format_Error');
 		}
-		if(!isset($datas['return_code']) or strtolower($datas['return_code']) == 'fail'){
-			$code = 40001;
-			$message = 'WeChat_Pay_Comm_Error';
-			return $this->error($code, $message);
-		}elseif(!isset($datas['result_code']) or strtolower($datas['result_code']) == 'fail'){
-			$code = 50001;
-			$message = 'WeChat_Pay_Trade_Error[' . $datas['err_code'] ?? 'NO_Des' . ']';
-			return $this->error($code, $message);
-		}elseif(!isset($datas['sign']) or $datas['sign'] != $this->sign($datas)){
-			$code = 60001;
-			$message = 'WeChat_Pay_Sign_Error';
-			return $this->error($code, $message);
-		}
+		if(!isset($datas['return_code']) or strtolower($datas['return_code']) == 'fail') return $this->error(40001, 'Nooper_Pay_Comm_Error');
+		elseif(!isset($datas['result_code']) or strtolower($datas['result_code']) == 'fail') return $this->error(50001, 'Nooper_Pay_Trade_Error[' . $datas['err_code'] ?? 'NO_Des' . ']');
+		elseif(!isset($datas['sign']) or $datas['sign'] != $this->sign($datas)) return $this->error(60001, 'Nooper_Pay_Sign_Error');
 		return $datas;
 	}
 	
@@ -598,7 +540,8 @@ class Payer {
 	}
 	
 	/**
-	 * protected string function rand(integer $length = 30)
+	 *
+	 * @name protected string function rand(integer $length = 30)
 	 */
 	protected function rand(int $length = 30): string {
 		$str = '';
@@ -608,6 +551,18 @@ class Payer {
 			$str .= $chars[mt_rand(0, $end)];
 		}
 		return strtoupper($str);
+	}
+	
+	/**
+	 * protected void function transfer(string $mime_type, string $file_name)
+	 */
+	protected function transfer(string $mime_type, string $file_name): void {
+		header('Cache-Control: no-cache');
+		header('Pragma: no-cache');
+		header('Content-Description: File Transfer');
+		header('Content-Type: ' . $mime_type);
+		header('Content-Disposition: attachment; filename=' . $file_name);
+		header('Content-Transfer-Encoding: binary');
 	}
 	
 	/**
