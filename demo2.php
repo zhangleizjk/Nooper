@@ -1,22 +1,14 @@
 <?php
+namespace Nooper;
 
-function aaa(bool $yes){
-	if($yes){
-		throw new Exception('error',100);
-		return null;
-	}
-	return null;
-}
+include_once './library/payer.class.php';
 
-function bbb(string $input){
-	echo $input;
-}
+$app_id='0001';
+$mch_id='0002';
+$key='0003';
+$notify_url='0004';
+$payer=new Payer($app_id, $mch_id, $key, $notify_url);
 
-function ccc(){
-	bbb(aaa(false));
-}
-
-ccc();
 
 
 

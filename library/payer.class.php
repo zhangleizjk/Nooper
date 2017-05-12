@@ -26,8 +26,8 @@ class Payer {
 	
 	/**
 	 */
-	protected $appid;
-	protected $mchid;
+	protected $app;
+	protected $mch;
 	protected $key;
 	protected $hash = 'MD5';
 	protected $datas = [];
@@ -153,11 +153,17 @@ class Payer {
 		[]
 	];
 	protected $qrcodeCreateParams = [
-		'product_id', 
-		'time_stamp'
+		[
+			'product_id', 
+			'time_stamp'
+		], 
+		[]
 	];
 	protected $qrcodeChangeParams = [
-		'long_url'
+		[
+			'long_url'
+		], 
+		[]
 	];
 	protected $callbackInputParams = [
 		[], 
@@ -182,7 +188,6 @@ class Payer {
 			'return_code', 
 			'result_code', 
 			'trade_type', 
-			'device_info', 
 			'transaction_id', 
 			'out_trade_no', 
 			'openid', 
@@ -209,14 +214,17 @@ class Payer {
 		$keys = array_merge($this->createParams[0], $this->queryParams[0], $this->closeParams[0]);
 		$keys = array_merge($keys, $this->refundParams[0], $this->refundQueryParams[0], $this->downloadParams[0]);
 		$keys = array_merge($keys, $this->qrcodeCreateParams[0], $this->qrcodeChangeParams[0]);
-		$keys = array_merge($keys, $this->callbackInputParams[0], $this->callbackOuputParams[0]);
+		$keys = array_merge($keys, $this->callbackInputParams[0], $this->callbackOutputParams[0]);
 		$keys = array_merge($keys, $this->notifyParams[0], $this->replyParams[0]);
-		$this->params = array_merge(array_unique($keys));
+		$keys = array_unique($keys);
+		sort($keys);
+		$this->params = $keys;
 		
 		$this->urls[self::operate_notify] = $notify_url;
 		$this->key = $app_key;
-		$this->mchid = $mch_id;
-		$this->appid = $app_id;
+		$this->mch = $mch_id;
+		$this->app = $app_id;
+		var_dump($this->urls);
 	}
 	
 	/**
@@ -230,7 +238,7 @@ class Payer {
 	 * public string function app(string $app_id)
 	 */
 	public function app(string $app_id): string {
-		$this->appid = $app_id;
+		$this->app = $app_id;
 		return $app_id;
 	}
 	
@@ -238,7 +246,7 @@ class Payer {
 	 * public string function mch(string $mch_id)
 	 */
 	public function mch(string $mch_id): string {
-		$this->mchid = $mch_id;
+		$this->mch = $mch_id;
 		return $mch_id;
 	}
 	
