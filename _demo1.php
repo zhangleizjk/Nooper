@@ -1,10 +1,14 @@
 <?php
-
-include_once './library/translator.class.php';
+namespace Nooper;
 include_once './library/mimicry.class.php';
-$mi=new \Nooper\Mimicry();
-$data=$mi->post('http://127.0.0.1/reply.php', '');
-$helper=new  \Nooper\Translator();
-var_dump();
+
+$mm=new Mimicry();
+try{
+	$data=$mm->get('http://404.php.net/',[]);
+	echo $data;
+}catch(\Exception $e){
+	echo $e->getCode();
+	echo $e->getMessage();
+}
 
 ?>
