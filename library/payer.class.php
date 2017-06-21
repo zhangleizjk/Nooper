@@ -10,6 +10,7 @@ use DateInterval;
 
 class Payer {
 	/**
+	 * Constants
 	 */
 	const operate_create = 1;
 	const operate_query = 2;
@@ -25,6 +26,7 @@ class Payer {
 	const operate_reply = 12;
 	
 	/**
+	 * Properties
 	 */
 	protected $app;
 	protected $mch;

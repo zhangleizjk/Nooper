@@ -1,14 +1,14 @@
 <?php
 namespace Nooper;
 include_once './library/mimicry.class.php';
+include_once './library/translator.class.php';
 
-$mm=new Mimicry();
-try{
-	$data=$mm->get('http://404.php.net/',[]);
-	echo $data;
-}catch(\Exception $e){
-	echo $e->getCode();
-	echo $e->getMessage();
-}
+$datas=[
+	
+];
+
+$helper=new Translator();
+$xml=$helper->createXML($datas, null, true, true);
+echo $xml;
 
 ?>
